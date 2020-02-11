@@ -4,7 +4,7 @@ const fs = require ("fs");
 // const hummus = require("hummus"); 
 const PDFImage = require("pdf-image").PDFImage; 
 
-const pdfFile = path.join(__dirname, 'source.pdf'); 
+
 const outputFolder = path.join(__dirname, "/output"); 
 
 
@@ -32,22 +32,33 @@ class PdfHandling {
         }
     }
 
+    addBookToFolder(bookPDF, bookId){
+        const file = path.basename(bookPDF); 
+        const dir = `./tmp/${bookId}`;
+        const dest = `./tmp/${bookId}/source.pdf`;
+        fs.rename(bookPDF, dest, (err) =>{
+            if (err) throw err; 
+        }); 
+    }
+
     createImages(bookId){
+        const pdfFile = path.join(__dirname, `/tmp/${bookId}/source.pdf`); 
         const pdfImage = new PDFImage(pdfFile);
         pdfImage.convertFile().then(function (imagePaths) {
-            console.log(imagePaths); 
-            for (let i=0; i<imagePaths.length; i++){
-                const file = path.basename(imagePaths[i]); 
-                //Code to create new folder
-                const dir = `./tmp/${bookId}`;
-                // if (!fs.existsSync(dir)){
-                //     fs.mkdirSync(dir);
-                // }
-                const dest = path.resolve(dir, file);
-                fs.rename(imagePaths[i], dest, (err) =>{
-                    if (err) throw err; 
-                }); 
-            }
+// Don't need this code if they are in the same temp file, only to move the files
+            // console.log(imagePaths); 
+            // for (let i=0; i<imagePaths.length; i++){
+            //     const file = path.basename(imagePaths[i]); 
+            //     //Code to create new folder
+            //     const dir = `./tmp/${bookId}`;
+            //     // if (!fs.existsSync(dir)){
+            //     //     fs.mkdirSync(dir);
+            //     // }
+            //     const dest = path.resolve(dir, file);
+            //     fs.rename(imagePaths[i], dest, (err) =>{
+            //         if (err) throw err; 
+            //     }); 
+            // }
         });
     }
 
