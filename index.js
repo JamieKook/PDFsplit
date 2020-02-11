@@ -2,4 +2,4 @@ const PdfHandling = require("./pdfsplit");
 
 const pdfHandling = new PdfHandling(); 
 
-pdfHandling.deleteTempBookFolder(13); 
+pdfHandling.deleteTempBookFolder(43); 

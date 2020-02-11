@@ -25,22 +25,27 @@ const outputFolder = path.join(__dirname, "/output");
 class PdfHandling { 
 //Code to split pdf into different images
 
+    createTempBookFolder(bookId){
+        const dir = `./tmp/${bookId}`;
+        if (!fs.existsSync(dir)){
+            fs.mkdirSync(dir);
+        }
+    }
+
     createImages(bookId){
         const pdfImage = new PDFImage(pdfFile);
         pdfImage.convertFile().then(function (imagePaths) {
             console.log(imagePaths); 
             for (let i=0; i<imagePaths.length; i++){
-                console.log(imagePaths[i]); 
                 const file = path.basename(imagePaths[i]); 
                 //Code to create new folder
-                    const dir = `./tmp/${bookId}`;
-                    if (!fs.existsSync(dir)){
-                        fs.mkdirSync(dir);
-                    }
+                const dir = `./tmp/${bookId}`;
+                // if (!fs.existsSync(dir)){
+                //     fs.mkdirSync(dir);
+                // }
                 const dest = path.resolve(dir, file);
                 fs.rename(imagePaths[i], dest, (err) =>{
                     if (err) throw err; 
-                    else console.log("PNG moved to tmp file"); 
                 }); 
             }
         });
