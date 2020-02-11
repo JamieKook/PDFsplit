@@ -30,6 +30,7 @@ class PdfHandling {
         if (!fs.existsSync(dir)){
             fs.mkdirSync(dir);
         }
+        return dir; 
     }
 
     addBookToFolder(bookPDF, bookId){
@@ -39,6 +40,7 @@ class PdfHandling {
         fs.rename(bookPDF, dest, (err) =>{
             if (err) throw err; 
         }); 
+        return dest; 
     }
 
     createImages(bookId){
@@ -59,6 +61,7 @@ class PdfHandling {
             //         if (err) throw err; 
             //     }); 
             // }
+            return imagePaths; 
         });
     }
 
