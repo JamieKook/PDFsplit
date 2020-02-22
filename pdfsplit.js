@@ -1,98 +1,135 @@
-// const extract = require("pdf-text-extract"); 
 const path =  require ("path"); 
 const fs = require ("fs"); 
-// const hummus = require("hummus"); 
-const PDFImage = require("pdf-image").PDFImage; 
+// const PDFImage = require("pdf-image").PDFImage; 
+const PDF2Pic = require("pdf2pic");
 
-
-const outputFolder = path.join(__dirname, "/output"); 
-
-
-
-//code to move file to different folder: 
-    // const dest = path.resolve(path.join(__dirname, "/tmp"), pdfFile); 
-
-    // fs.rename(pdfFile, dest, (err)=>{
-    //     if (err) throw err; 
-    //     else console.log("Successfully moved"); 
-    // }); 
-
-//Code to erase folder contents
-    // fs.readdirSync(outputFolder).filter((file) => {
-    //     fs.unlinkSync(path.join(outputFolder, file));
-    //   });
 
 class PdfHandling { 
-//Code to split pdf into different images
+
+    async otherCreate(bookId){
+
+        try {
+            const pdf2pic = new PDF2Pic({
+                density: 100,           // output pixels per inch
+                savename:  `book${bookId}`,   // output file name
+                savedir: `./public/tmp/${bookId}`,    // output file location
+                format: "png",          // output file format
+                size: "600x600"         // output size in pixels
+              });
+               
+             const resolve = await pdf2pic.convertBulk(`./public/tmp/${bookId}/book${bookId}.pdf`, -1); 
+            console.log("image converter successfully!");
+            return resolve;
+        } catch(err){
+            console.log(err); 
+        }
+       
+    }
 
     createTempBookFolder(bookId){
-        const dir = `./tmp/${bookId}`;
+        const dir = `./public/tmp/${bookId}`;
+        //check to see if folder already exists
         if (!fs.existsSync(dir)){
             fs.mkdirSync(dir);
-        }
+        } else {
+            //if it does remove old timestap
+            fs.readdirSync(dir).filter((file) => {
+                if (parseInt(file)){
+                    fs.unlinkSync(path.join(dir, file));
+                }
+            }); 
+        } 
+        //add timestap file
+        const time = Date.now(); 
+        fs.writeFileSync(`${dir}/${time}`, time); 
         return dir; 
     }
 
-    addBookToFolder(bookPDF, bookId){
-        const file = path.basename(bookPDF); 
-        const dir = `./tmp/${bookId}`;
-        const dest = `./tmp/${bookId}/source.pdf`;
-        fs.rename(bookPDF, dest, (err) =>{
+    addBookToFolder(bookId, fileName){
+        const file = path.join(__dirname,`../uploads/${bookId}/${fileName}`); 
+        const dest = path.join(__dirname,`../tmp/${bookId}/book${bookId}.pdf`);
+        fs.rename(file, dest, (err) =>{
             if (err) throw err; 
         }); 
         return dest; 
     }
 
-    createImages(bookId){
-        const pdfFile = path.join(__dirname, `/tmp/${bookId}/source.pdf`); 
+    async createImages(bookId){
+        console.log("Into the create images method");
+        try {
+        const pdfFile =  `./public/tmp/${bookId}/book${bookId}.pdf`; 
         const pdfImage = new PDFImage(pdfFile);
-        pdfImage.convertFile().then(function (imagePaths) {
-// Don't need this code if they are in the same temp file, only to move the files
-            // console.log(imagePaths); 
-            // for (let i=0; i<imagePaths.length; i++){
-            //     const file = path.basename(imagePaths[i]); 
-            //     //Code to create new folder
-            //     const dir = `./tmp/${bookId}`;
-            //     // if (!fs.existsSync(dir)){
-            //     //     fs.mkdirSync(dir);
-            //     // }
-            //     const dest = path.resolve(dir, file);
-            //     fs.rename(imagePaths[i], dest, (err) =>{
-            //         if (err) throw err; 
-            //     }); 
-            // }
-            return imagePaths; 
-        });
+        const imagePaths = await pdfImage.convertFile();
+        let imgPathObj = {}; 
+        for (let i=0; i<imagePaths.length; i++){
+            imgPathObj[`image ${i}`] = imagePaths[i]; 
+        }  
+        console.log(`pdfHanding return: ${imgPathObj}`); 
+        return imgPathObj;
+        } catch (err) {
+            console.log(err); 
+        }
+       
     }
 
     deleteTempBookFolder(bookId){
-        const tempFolder = path.join(__dirname, `/tmp/${bookId}`); 
+        const tempFolder = path.join(__dirname, `/public/tmp/${bookId}`); 
         fs.readdirSync(tempFolder).filter((file) => {
             fs.unlinkSync(path.join(tempFolder, file));
         });
         fs.rmdirSync(tempFolder); 
+        console.log("deleted folder "+ bookId); 
     }
+
+
+    deleteOldTempBookFolder(){
+        const currentTime = Date.now(); 
+        console.log(`the current time is ${currentTime}`); 
+        const tempFolder = (`./public/tmp`); 
+        fs.readdirSync(tempFolder).filter((folder) => {
+            let isOld=false; 
+            let folderName = `./public/tmp/${folder}`; 
+            fs.readdirSync(folderName).filter((file) => {
+                //checks to see if folder has been there for longer than an hour
+               const hourOld= parseInt(file)+ 3.6e+6; 
+               console.log(`the expiration is ${hourOld}`); 
+                if (hourOld < currentTime){
+                    isOld=true; 
+                    console.log(folderName); 
+                    const oldPdf = folderName.replace("./public/tmp/", "book")+".pdf";
+                    console.log(oldPdf); 
+                    fs.unlinkSync(path.join(folderName, file));
+                    fs.unlinkSync(path.join(folderName, oldPdf)); 
+                } else{
+                    const oldPdf = folderName.replace("./public/tmp/", "book")+".pdf";
+                    console.log(oldPdf); 
+                }; 
+            });
+            if (isOld){
+                fs.rmdirSync(folderName); 
+                console.log("removed old folder"); 
+            } else {
+                console.log("file is still new"); 
+            }
+        });
+    }
+    // deleteUploadsBookFolder(bookId){
+    //     const uploadsFolder = path.join(__dirname, `/uploads/${bookId}`); 
+    //     fs.readdirSync(uploadsFolder).filter((file) => {
+    //         fs.unlinkSync(path.join(uploadsFolder, file));
+    //     });
+    //     fs.rmdirSync(uploadsFolder); 
+    // }
+
+    // deleteDownloadsBookFolder(bookId){
+    //     const downloadsFolder = path.join(__dirname, `/downloads/${bookId}`); 
+    //     fs.readdirSync(downloadsFolder).filter((file) => {
+    //         fs.unlinkSync(path.join(downloadsFolder, file));
+    //     });
+    //     fs.rmdirSync(downloadsFolder); 
+    // }
 
 }
 
 module.exports= PdfHandling; 
-
-//Code to split pdf and then save as png
-// extract (pdfFile, (err, pages) => {
-//     if (err) console.dir(err); 
-//     for (let i=0; i<pages.length; i++){
-//         const pdfWriter = hummus.createWriter(path.join(outputFolder, `Page${i}.pdf`)); 
-//         pdfWriter.appendPDFPagesFromPDF(pdfFile, {type: hummus.eRangeTypeSpecific, specificRanges: [ [i, i]]}); 
-//         pdfWriter.end(); 
-//     }
-
-//     fs.readdirSync(outputFolder).filter((file) => {
-//         console.log(`${outputFolder}/${file}`); 
-//         const pdfImage= new PDFImage(`${outputFolder}/${file}`);
-//         pdfImage.convertPage(0).then(function (outputFolder){
-//             console.log(`converted ${file}`); 
-//             fs.existsSync(path.join(outputFolder, `${file}.png`)); 
-//         });
-//       });
-// }); 
 
